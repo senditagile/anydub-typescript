@@ -1,46 +1,67 @@
-import path from "path";
 import { CreatePagesArgs, GatsbyNode } from "gatsby";
-import { archive, category, join, layout, tag } from "../src/utils/url";
-import * as articlesQuery from "./query/articles";
-import * as archivesQuery from "./query/archives";
-import * as categoriesQuery from "./query/categories";
-import * as tagsQuery from "./query/tags";
-import { status } from "./query/filter";
+import { createFilePath } from "gatsby-source-filesystem";
 
-export const onCreateNode: GatsbyNode["onCreateNode"] = ({ node, actions }) => {
+import * as queries from './queries';
+import * as constants from "./constants";
+import * as types from "../src/types";
+import * as utils from "./utils";
+
+import { onCreateWebpackConfigFunc } from "./on-create-webpack-config";
+
+export const onCreateWebpackConfig = onCreateWebpackConfigFunc;
+
+export const onCreateNode: GatsbyNode["onCreateNode"] = ({
+  node,
+  actions,
+  getNode,
+}) => {
   const { createNodeField } = actions;
-  if (node.internal.type === "Mdx") {
-    const frontmatter = node.frontmatter as {
-      layout: string;
-      slug: string;
-      date: string;
-    };
 
-    // 固定链接
-    const slug = layout(
-      frontmatter.slug,
-      frontmatter.layout === "post" ? "post" : "page"
-    );
-    createNodeField({
-      node,
-      name: "slug",
-      value: slug
-    });
+  if (node.internal.type === "MarkdownRemark") {
+    const { frontmatter, parent }: types.Edge["node"] = node;
+    const { tags, category, slug } = frontmatter || {};
 
-    // 部分日期
-    const date = new Date(frontmatter.date);
-    createNodeField({
-      node,
-      name: "date_year",
-      value: date.getFullYear()
-    });
-    createNodeField({
-      node,
-      name: "date_month",
-      value: date.getMonth()
-    });
+    if (slug) {
+      const dirname = parent && getNode(parent)?.relativeDirectory;
+      const value =
+        typeof dirname === "string"
+          ? utils.concat("/", dirname, "/", slug)
+          : utils.concat("/", slug);
+
+      createNodeField({ node, name: "slug", value });
+    } else {
+      const value = createFilePath({ node, getNode });
+      createNodeField({ node, name: "slug", value });
+    }
+
+    if (tags) {
+      const value = tags.map(tag =>
+        utils.concat(
+          constants.routes.tagRoute,
+          "/",
+          utils.toKebabCase(tag),
+          "/",
+        ),
+      );
+
+      createNodeField({ node, name: "tagSlugs", value });
+    }
+
+    if (category) {
+      const value = utils.concat(
+        constants.routes.categoryRoute,
+        "/",
+        utils.toKebabCase(category),
+        "/",
+      );
+
+      createNodeField({ node, name: "category", value });
+    }
   }
 };
+
+const getPaginationPath = (basePath: string, page: number): string =>
+  [basePath === "/" ? "" : basePath, "page", page].join("/");
 
 export const createPages: GatsbyNode["createPages"] = async ({
   graphql,
@@ -48,148 +69,130 @@ export const createPages: GatsbyNode["createPages"] = async ({
 }: CreatePagesArgs) => {
   const { createPage } = actions;
 
-  // 创建分页
-  const createPagination = (
-    size: number,
-    path: string,
-    component: string,
-    context?: Record<string, any>
-  ) => {
-    const perPage = 10;
-    const pageSize = Math.ceil(size / perPage);
-    createPage({
-      path: join(path),
-      component,
-      context: {
-        limit: perPage,
-        skip: 0,
-        pageSize,
-        currentPage: 1,
-        ...context
-      }
-    });
-    for (let i = 0; i < pageSize; i++) {
+  createPage({
+    path: constants.templates.notFoundTemplate,
+    component: constants.templates.notFoundTemplate,
+    context: {},
+  });
+
+  createPage({
+    path: constants.routes.tagsListRoute,
+    component: constants.templates.tagsTemplate,
+    context: {},
+  });
+
+  createPage({
+    path: constants.routes.categoriesListRoute,
+    component: constants.templates.categoriesTemplate,
+    context: {},
+  });
+
+  const pages = await queries.pagesQuery(graphql);
+
+  pages.forEach(edge => {
+    const { node } = edge;
+
+    if (node?.frontmatter?.template === "page" && node?.fields?.slug) {
       createPage({
-        path: join(path, "page", i + 1),
-        component,
-        context: {
-          limit: perPage,
-          skip: i * perPage,
-          pageSize,
-          currentPage: i + 1,
-          ...context
-        }
+        path: node.fields.slug,
+        component: constants.templates.pageTemplate,
+        context: { slug: node.fields.slug },
+      });
+    } else if (node?.frontmatter?.template === "post" && node?.fields?.slug) {
+      createPage({
+        path: node.fields.slug,
+        component: constants.templates.postTemplate,
+        context: { slug: node.fields.slug },
       });
     }
+  });
+
+  const createWithPagination: CreateWithPagination = ({
+    group,
+    template,
+    page,
+    path,
+    total,
+    limit,
+  }) => {
+    createPage({
+      component: template,
+      path: page === 0 ? path : getPaginationPath(path, page),
+      context: {
+        group,
+        limit,
+        offset: page * limit,
+        pagination: {
+          currentPage: page,
+          prevPagePath:
+            page <= 1 ? path : getPaginationPath(path, utils.decrement(page)),
+          nextPagePath: getPaginationPath(path, utils.increment(page)),
+          hasNextPage: page !== utils.decrement(total),
+          hasPrevPage: page !== 0,
+        },
+      },
+    });
   };
 
-  // 查询数据
-  const articles = articlesQuery.convert(
-    (await graphql(articlesQuery.query, { status })).data as any
-  );
-  const categories = categoriesQuery.convert(
-    (await graphql(categoriesQuery.query, { status })).data as any
-  );
-  const tags = tagsQuery.convert(
-    (await graphql(tagsQuery.query, { status })).data as any
-  );
-  const archives = archivesQuery.convert(
-    (await graphql(archivesQuery.query, { status })).data as any
-  );
+  const categories = await queries.categoriesQuery(graphql);
+  const metadata = await queries.metadataQuery(graphql);
+  const postsLimit = metadata?.postsLimit ?? 1;
 
-  // 文章或其他类型的页面，通过 layout 区分
-  // 页面
-  const pages = articles.filter((n) => n.layout !== "post");
-  pages.forEach((page) => {
-    createPage({
-      path: join(page.link),
-      component: path.resolve(`src/templates/${page.layout}.tsx`),
-      context: {
-        link: `${page.link}`,
-        layout: page.layout,
-        status
-      }
-    });
-  });
-  // 文章
-  const posts = articles.filter((n) => n.layout === "post");
-  posts.forEach((post, index) => {
-    const next = index === posts.length - 1 ? null : posts[index + 1];
-    const prev = index === 0 ? null : posts[index - 1];
-    createPage({
-      path: join(post.link),
-      component: path.resolve(`src/templates/page.tsx`),
-      context: {
-        link: join(post.link),
-        prev,
-        next,
-        layout: post.layout,
-        status
-      }
-    });
-  });
-
-  // 文章列表
-  createPagination(posts.length, "/", path.resolve("src/templates/list.tsx"), {
-    status
-  });
-
-  // 分类
-  categories.forEach((c) => {
-    createPagination(
-      c.count,
-      category(c.name),
-      path.resolve(`src/templates/category.tsx`),
-      {
-        category: c.name,
-        totalCount: c.count,
-        status
-      }
+  categories.forEach(category => {
+    const total = Math.ceil(category.totalCount / postsLimit);
+    const path = utils.concat(
+      constants.routes.categoryRoute,
+      "/",
+      utils.toKebabCase(category.fieldValue),
     );
-  });
-  // 标签
-  tags.forEach((t) => {
-    createPagination(
-      t.count,
-      tag(t.name),
-      path.resolve(`src/templates/tag.tsx`),
-      {
-        tag: t.name,
-        totalCount: t.count,
-        status
-      }
-    );
-  });
-  // 归档
-  archives.forEach((a) => {
-    createPagination(
-      a.count,
-      archive(a.name),
-      path.resolve(`src/templates/archive.tsx`),
-      {
-        archive: parseInt(a.name),
-        totalCount: a.count,
-        status
-      }
-    );
-  });
 
-  // 所有归档（时间轴）
-  createPagination(
-    posts.length,
-    `timeline`,
-    path.resolve(`src/templates/archive.tsx`),
-    {
-      totalCount: posts.length,
-      status
-    }
-  );
-  // 标签云
-  createPage({
-    path: join("tags"),
-    component: path.resolve(`src/templates/tag-cloud.tsx`),
-    context: {
-      status
+    for (let page = 0; page < total; page += 1) {
+      createWithPagination({
+        limit: postsLimit,
+        group: category.fieldValue,
+        template: constants.templates.categoryTemplate,
+        total,
+        page,
+        path,
+      });
     }
   });
+
+  const tags = await queries.tagsQuery(graphql);
+
+  tags.forEach(tag => {
+    const path = utils.concat(
+      constants.routes.tagRoute,
+      "/",
+      utils.toKebabCase(tag.fieldValue),
+    );
+
+    const total = Math.ceil(tag.totalCount / postsLimit);
+
+    for (let page = 0; page < total; page += 1) {
+      createWithPagination({
+        limit: postsLimit,
+        group: tag.fieldValue,
+        template: constants.templates.tagTemplate,
+        total,
+        page,
+        path,
+      });
+    }
+  });
+
+  const path = constants.routes.indexRoute;
+  const template = constants.templates.indexTemplate;
+  const posts = await queries.postsQuery(graphql);
+  const total = Math.ceil((posts?.edges?.length ?? 0) / postsLimit);
+
+  for (let page = 0; page < total; page += 1) {
+    createWithPagination({
+      limit: postsLimit,
+      template,
+      total,
+      page,
+      path,
+    });
+  }
 };
