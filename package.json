@@ -10,14 +10,37 @@
   "license": "Apache-2.0",
   "main": "n/a",
   "scripts": {
-    "build": "gatsby build",
-    "clean": "gatsby clean && rimraf public",
+    "build": "npm run clean && gatsby build",
+    "clean": "rimraf .cache public",
     "dev": "gatsby develop",
+    "proxy": "npx netlify-cms-proxy-server",
+    "format": "npm run format:ts && npm run format:scss",
+    "format:scss": "stylelint \"src/**/*.scss\" --fix",
+    "format:ts": "prettier --write .",
+    "lint": "npm run lint:ts && npm run lint:scss",
+    "lint:commit": "commitlint --edit",
+    "lint:scss": "stylelint \"src/**/*.scss\"",
+    "lint:staged": "lint-staged",
+    "lint:ts": "eslint \"src\" --ext .tsx,.ts && prettier --check .",
+    "proxy-netlify": "npx netlify-cms-proxy-server",
+    "semantic-release": "semantic-release",
     "serve": "gatsby serve",
-    "proxy": "npx netlify-cms-proxy-server"
+    "start": "concurrently --kill-others \"npm run clean && gatsby develop\" \"npm run proxy-netlify\"",
+    "test": "jest --config ./internal/testing/jest-config.ts",
+    "test:coverage": "jest --coverage --config ./internal/testing/jest-config.ts"
   },
-  "engines": {
-    "node": ">=8.0.0"
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "lint-staged": {
+    "*.{tsx?,ts?}": [
+      "npm run format:ts"
+    ],
+    "*.{css?,scss?}": [
+      "npm run format:scss"
+    ]
   },
   "dependencies": {
     "@loadable/component": "^5.15.2",
@@ -28,6 +51,7 @@
     "artalk": "^2.1.4",
     "axios": "^0.25.0",
     "classnames": "^2.3.1",
+    "concurrently": "^7.1.0",
     "dotenv": "^14.3.2",
     "gatsby": "^4.6.0",
     "gatsby-background-image": "^1.6.0",
@@ -122,6 +146,8 @@
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-react": "^7.28.0",
     "eslint-plugin-react-hooks": "^4.3.0",
+    "netlify-cms-proxy-server": "^1.3.24",
+    "npx": "^10.2.2",
     "prettier": "2.5.1",
     "rimraf": "^3.0.2",
     "webpack": "^5.67.0"

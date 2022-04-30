@@ -158,7 +158,7 @@ export default {
         short_name: config.title,
         theme_color: "hsl(31, 92%, 62%)",
         background_color: "hsl(0, 0%, 100%)",
-        icon: "content/photo.jpg",
+        icon: "content/anydub.png",
         display: "standalone",
         start_url: "/",
       },
@@ -187,13 +187,6 @@ export default {
             },
           ],
         },
-      },
-    },
-    {
-      resolve: "@sentry/gatsby",
-      options: {
-        dsn: process.env.SENTRY_DSN,
-        tracesSampleRate: 1,
       },
     },
     "gatsby-plugin-image",
