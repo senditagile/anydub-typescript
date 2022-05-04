@@ -24,6 +24,13 @@ export default {
       },
     },
     {
+      resolve: 'gatsby-source-filesystem',
+      options: {
+        path: path.resolve("static/media"),
+        name: 'media'
+      }
+    },
+    {
       resolve: "gatsby-plugin-netlify-cms",
       // options: {
       //   modulePath: `${__dirname}/../src/cms/index.js`

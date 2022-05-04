@@ -4,7 +4,7 @@ export default [
       id: "08870ea6-bdc8-4ec6-bf72-1e7d4488eb72",
       fields: {
         slug: "/posts/perfecting-the-art-of-perfection",
-        categorySlug: "/typography",
+        category: "/typography",
       },
       frontmatter: {
         date: "2016-09-01",
@@ -22,7 +22,7 @@ export default [
       id: "066adc91-f87a-4e57-9fef-7a677baf5c1d",
       fields: {
         slug: "/posts/the-birth-of-movable-type",
-        categorySlug: "/design-inspiration",
+        category: "/design-inspiration",
       },
       frontmatter: {
         date: "2016-09-01",

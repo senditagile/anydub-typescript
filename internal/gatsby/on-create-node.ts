@@ -50,7 +50,7 @@ const onCreateNode: GatsbyNode["onCreateNode"] = ({
         "/",
       );
 
-      createNodeField({ node, name: "categorySlug", value });
+      createNodeField({ node, name: "category", value });
     }
   }
 };
