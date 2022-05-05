@@ -1,9 +1,9 @@
 {
-  "name": "@syfxlin/blog",
-  "description": "Otstar Lin 的博客",
-  "version": "1.0.0",
+  "name": "anydub",
+  "description": "The best gatsby 4, netlify cms, typescript starter",
+  "version": "0.0.7",
   "private": true,
-  "author": "Otstar Lin <syfxlin@gmail.com>",
+  "author": "senditagile@gmail.com",
   "keywords": [
     "gatsby"
   ],
