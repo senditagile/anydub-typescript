@@ -4,6 +4,14 @@ import config from "../content/config.json";
 import * as types from "../internal/gatsby/types";
 
 export default {
+  flags: {
+    PARALLEL_SOURCING: true,
+    LMDB_STORE: false,
+    FAST_DEV: true,
+    DEV_SSR: true,
+    DEV_WEBPACK_CACHE: true,
+    PRESERVE_FILE_DOWNLOAD_CACHE: false,
+  },
   pathPrefix: config.pathPrefix,
   siteMetadata: {
     url: config.url,

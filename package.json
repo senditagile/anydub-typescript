@@ -25,7 +25,7 @@
     "proxy-netlify": "npx netlify-cms-proxy-server",
     "semantic-release": "semantic-release",
     "serve": "gatsby serve",
-    "start": "concurrently --kill-others \"npm run clean && gatsby develop\" \"npm run proxy-netlify\"",
+    "start": "concurrently --kill-others \"npm run clean && set DEBUG=SSG* && gatsby develop\" \"npm run proxy-netlify\"",
     "test": "jest --config ./internal/testing/jest-config.ts",
     "test:coverage": "jest --coverage --config ./internal/testing/jest-config.ts"
   },
@@ -55,6 +55,7 @@
     "gatsby-plugin-google-gtag": "^4.13.0",
     "gatsby-plugin-image": "^2.13.0",
     "gatsby-plugin-manifest": "^4.13.0",
+    "gatsby-plugin-modal-routing": "^1.2.0",
     "gatsby-plugin-netlify": "^4.3.1",
     "gatsby-plugin-netlify-cms": "^6.13.0",
     "gatsby-plugin-offline": "^5.13.0",
@@ -124,6 +125,7 @@
     "react-test-renderer": "^16.4.0",
     "rimraf": "3.0.2",
     "sass": "^1.42.1",
+    "source-map-loader": "^4.0.0",
     "stylelint": "13.13.1",
     "stylelint-config-recommended-scss": "4.3.0",
     "stylelint-scss": "4.1.0"

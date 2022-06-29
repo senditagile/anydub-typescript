@@ -1,3 +1,4 @@
+import debug from "debug";
 import { GatsbyNode } from "gatsby";
 
 import * as constants from "./constants";
@@ -17,6 +18,7 @@ const getPaginationPath = (basePath: string, page: number): string =>
   [basePath === "/" ? "" : basePath, "page", page].join("/");
 
 const createPages: GatsbyNode["createPages"] = async ({ graphql, actions }) => {
+  debug('log shit');
   const { createPage } = actions;
 
   createPage({
@@ -47,13 +49,22 @@ const createPages: GatsbyNode["createPages"] = async ({ graphql, actions }) => {
         path: node.fields.slug,
         component: constants.templates.pageTemplate,
         context: { slug: node.fields.slug },
-      });
+      }); 
     } else if (node?.frontmatter?.template === "post" && node?.fields?.slug) {
-      createPage({
-        path: node.fields.slug,
-        component: constants.templates.postTemplate,
-        context: { slug: node.fields.slug },
-      });
+      debug('gets videos');
+      if (node?.frontmatter?.video) {
+        createPage({
+          path: node.fields.slug + '/video', //todo type
+          component: constants.templates.videoModalTemplate,
+          context: { slug: node.fields.slug },
+        });
+      } else {
+        createPage({
+          path: node.fields.slug,
+          component: constants.templates.postTemplate,
+          context: { slug: node.fields.slug },
+        });
+      }  
     }
   });
 

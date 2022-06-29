@@ -1,6 +1,7 @@
 import { Node as GatsbyNode } from "gatsby";
 
 interface Frontmatter {
+  video?: any;
   date?: string;
   slug?: string;
   template?: string;

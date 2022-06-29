@@ -19,6 +19,18 @@ const onCreateWebpackConfigFunc = (
         ),
       },
     });
+    actions.setWebpackConfig({
+      devtool: "source-map",
+      module: {
+        rules: [
+          {
+            test: /\.js$/,
+            use: ["source-map-loader"],
+            enforce: "pre"
+          }
+        ]
+      }
+    });
   }
 )(compilerOptions);
 
